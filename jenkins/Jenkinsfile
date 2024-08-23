@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    environment {
+        S3_BUCKET = 'my-s3-bucket-for-jenkins-pipeline-setup'
+        S3_KEY = 'my-app.zip'
+        ENVIRONMENT_NAME = 'Linux-based-web-application-env'
+        APPLICATION_NAME = 'linux-based-web-application'
+        AWS_REGION = 'us-east-1'
+        VERSION_LABEL = "app-version-${BUILD_NUMBER}"  // Unique version label using Jenkins build number
+        SECRET_NAME = 'arn:aws:secretsmanager:us-east-1:897722702132:secret:secret-jenkins-access-mD9KQk'  // Replace with your actual secret name
+    }
+
+    stages {
+        stage('Retrieve AWS Credentials from Secrets Manager') {
+            steps {
+                script {
+                    def secretValue = sh(script: "aws secretsmanager get-secret-value --secret-id ${SECRET_NAME} --query SecretString --output text --region ${AWS_REGION}", returnStdout: true).trim()
+                    def credentials = readJSON text: secretValue
+                    env.AWS_ACCESS_KEY_ID = credentials.AWS_ACCESS_KEY_ID
+                    env.AWS_SECRET_ACCESS_KEY = credentials.AWS_SECRET_ACCESS_KEY
+                }
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/ManojKamatam/Beanstalk_Deployments_maintainingVersions.git', branch: 'main'
+            }
+        }
+        
+        stage('Upload to S3') {
+            steps {
+                sh "aws s3 cp application.zip s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}"
+            }
+        }
+
+        stage('Create Application Version') {
+            steps {
+                sh """
+                    aws elasticbeanstalk create-application-version \
+                    --application-name ${APPLICATION_NAME} \
+                    --version-label ${VERSION_LABEL} \
+                    --source-bundle S3Bucket=${S3_BUCKET},S3Key=${S3_KEY} \
+                    --region ${AWS_REGION}
+                """
+            }
+        }
+
+        stage('Update Elastic Beanstalk Environment') {
+            steps {
+                sh """
+                    aws elasticbeanstalk update-environment \
+                      --application-name ${APPLICATION_NAME} \
+                      --environment-name ${ENVIRONMENT_NAME} \
+                      --version-label ${VERSION_LABEL} \
+                      --region ${AWS_REGION}
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Deployment process completed.'
+        }
+    }
+}
