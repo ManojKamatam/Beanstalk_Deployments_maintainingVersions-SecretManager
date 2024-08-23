@@ -22,7 +22,7 @@ pipeline {
                     def credentials = jsonSlurper.parseText(secretValue)
 
                     // Extract the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-                    env.AWS_ACCESS_KEY_ID = credentials.keySet().toArray()[0]  // The key (AWS_ACCESS_KEY_ID)
+                    env.AWS_ACCESS_KEY_ID = credentials.keySet().iterator().next()  // The key (AWS_ACCESS_KEY_ID)
                     env.AWS_SECRET_ACCESS_KEY = credentials[env.AWS_ACCESS_KEY_ID]  // The value (AWS_SECRET_ACCESS_KEY)
                 }
             }
