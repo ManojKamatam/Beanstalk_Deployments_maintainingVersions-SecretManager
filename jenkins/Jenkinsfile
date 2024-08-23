@@ -16,7 +16,8 @@ pipeline {
             steps {
                 script {
                     def secretValue = sh(script: "aws secretsmanager get-secret-value --secret-id ${SECRET_NAME} --query SecretString --output text --region ${AWS_REGION}", returnStdout: true).trim()
-                    def credentials = readJSON text: secretValue
+                    def jsonSlurper = new groovy.json.JsonSlurper()
+                    def credentials = jsonSlurper.parseText(secretValue)
                     env.AWS_ACCESS_KEY_ID = credentials.AWS_ACCESS_KEY_ID
                     env.AWS_SECRET_ACCESS_KEY = credentials.AWS_SECRET_ACCESS_KEY
                 }
