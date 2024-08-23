@@ -8,6 +8,7 @@ pipeline {
         APPLICATION_NAME = 'linux-based-web-application'
         AWS_REGION = 'us-east-1'
         SECRET_NAME = 'secret-jenkins-access'  // Replace with your actual secret name
+        VERSION_LABEL = "app-version-${BUILD_NUMBER}"
     }
 
     stages {
