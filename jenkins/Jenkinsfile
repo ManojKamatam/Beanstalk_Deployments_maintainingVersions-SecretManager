@@ -67,8 +67,11 @@ pipeline {
     }
 
     post {
-        always {
-            echo 'Deployment process completed.'
+        success {
+            echo 'Deployment process completed successfully.'
+        }
+        failure {
+            echo 'Deployment process failed. Please check the logs for more details.'
         }
     }
 }
